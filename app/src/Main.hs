@@ -8,17 +8,9 @@ import Happer.Json
 import Happer.Templates
 
 import Happstack.Server
+import Happstack.Helpers
 
-import Control.Monad          ( msum )
-import Control.Monad.IO.Class ( liftIO )
-
--- TODO: Move to helpers
-getBody = do
-  req <- askRq
-  body <- liftIO $ takeRequestBody req
-  case body of
-    Just rqbody -> return (unBody rqbody)
-    Nothing     -> return ""
+import Control.Monad ( msum )
 
 putTrace :: Datastore -> Integer -> ServerPart Response
 putTrace datastore id =
@@ -51,9 +43,9 @@ handlers datastore = do
     case r of
       Left e      -> error $ unlines e
       Right state -> return state
-  msum [ dir "trace" $ method PUT >> path (putTrace datastore)
-       , dir "trace" $ method GET >> path (getTrace datastore)
-       , dir "spans" $ postSpans datastore
+  msum [ dir "trace" $ method PUT >> path (putTrace  datastore)
+       , dir "trace" $ method GET >> path (getTrace  datastore)
+       , dir "spans" $                     postSpans datastore
        , viewServe viewHandler -- TODO: Collapse these two functions into one.
        , nullDir >> seeOther ("/index" :: String) (toResponse ())
        ]
