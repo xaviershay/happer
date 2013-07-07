@@ -3,17 +3,13 @@ module Happer.Splices where
 import Happer.Types
 import Happer.Persistence
 
--- TODO: push these down into persistence layer?
-import Data.Acid          ( AcidState )
-import Data.Acid.Advanced ( query', update' )
-
 import Heist.Compiled         (Splice, yieldRuntimeText)
 import qualified Text.XmlHtml as X
 import qualified Data.Text    as T
 
-traceCountSplice :: (Monad m) => AcidState HapperState -> Splice m
+traceCountSplice :: (Monad m) => Datastore -> Splice m
 traceCountSplice datastore = do
-    count <- query' datastore TraceCount
+    count <- runQuery datastore TraceCount
     let res = yieldRuntimeText $ do
                                  return $ T.pack $ show count
     return res

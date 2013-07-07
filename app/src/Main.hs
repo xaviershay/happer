@@ -10,14 +10,8 @@ import Happer.Splices
 import Happstack.Server
 import Happstack.Server.Heist (heistServe, initHeistCompiled)
 
-import Control.Exception      ( bracket )
 import Control.Monad          ( msum )
 import Control.Monad.IO.Class ( liftIO )
-
--- TODO: push these down into persistence layer?
-import Data.Acid.Advanced ( query', update' )
-import Data.Acid          ( AcidState, openLocalState )
-import Data.Acid.Local    ( createCheckpointAndClose )
 
 -- TODO: push down into Happer.Json
 import Data.Aeson         ( encode, eitherDecode, object, (.=) )
@@ -30,29 +24,29 @@ getBody = do
     Just rqbody -> return (unBody rqbody)
     Nothing     -> return ""
 
-putTrace :: AcidState HapperState -> Integer -> ServerPart Response
+putTrace :: Datastore -> Integer -> ServerPart Response
 putTrace datastore id =
     do body <- getBody
        case eitherDecode body of
          Left err    -> badRequest $ toResponse $
                         encode (object [ "error" .= err ])
-         Right trace -> do _ <- update' datastore (AddTrace trace)
+         Right trace -> do _ <- runUpdate datastore (AddTrace trace)
                            ok $ toResponse $ encode trace
 
-getTrace :: AcidState HapperState -> Integer -> ServerPart Response
+getTrace :: Datastore -> Integer -> ServerPart Response
 getTrace datastore id =
-  do trace <- query' datastore $ TraceById (SpanId id)
+  do trace <- runQuery datastore $ TraceById (SpanId id)
      case trace of
        Just x  -> ok       $ toResponse $ encode trace
        Nothing -> notFound $ toResponse $ encode (object [] )
 
-postSpans :: AcidState HapperState -> ServerPart Response
+postSpans :: Datastore -> ServerPart Response
 postSpans datastore =
   do body <- getBody
      case eitherDecode body of
        Left err    -> badRequest $ toResponse $
                       encode (object [ "error" .= err ])
-       Right spans -> do _ <- update' datastore (AddSpans spans)
+       Right spans -> do _ <- runUpdate datastore (AddSpans spans)
                          ok $ toResponse $ encode (object [])
 
 handlers datastore = do
@@ -69,6 +63,5 @@ handlers datastore = do
        ]
 
 main :: IO ()
-main = do bracket (openLocalState initialState)
-                  (createCheckpointAndClose)
-                  (simpleHTTP nullConf . handlers)
+main = do
+  withDatastore (simpleHTTP nullConf . handlers)

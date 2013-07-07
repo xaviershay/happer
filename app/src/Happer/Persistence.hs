@@ -5,6 +5,7 @@ module Happer.Persistence where
 import Happer.Types
 import qualified Happer.Types as HT
 
+import Control.Exception    ( bracket )
 import Control.Monad.List   ( guard )
 import Control.Monad.Reader ( ask )
 import Control.Monad.State  ( get, put )
@@ -12,9 +13,38 @@ import Control.Monad.State  ( get, put )
 import Data.Maybe         ( fromJust, isJust )
 import Data.List          ( nub )
 import Data.Map           ( Map, fromListWith, foldrWithKey, findWithDefault )
-import Data.Acid          ( AcidState, Query, Update, makeAcidic )
+import Data.Acid
+import Data.Acid.Advanced ( query', update' )
+import Data.Acid.Local    ( createCheckpointAndClose )
 import Data.IxSet         ( (@=), getOne )
 import qualified Data.IxSet as IxSet
+
+import Control.Monad.IO.Class (MonadIO)
+
+-- AcidState persists regular haskell data structures to disk with ACID
+-- guarantees. It does have a remote server option which I need to investigate
+-- more.
+type Datastore = AcidState HapperState
+
+-- All clients should wrap datastore access in this method to ensure correct
+-- setup and teardown.
+withDatastore f = bracket (openLocalState initialState)
+                          (createCheckpointAndClose)
+                          f
+
+-- Alias acid-state query methods so we don't leak them into other modules.
+-- Type signatures are unfortunately required by the compiler.
+runQuery ::    (MonadIO m, QueryEvent event)
+            => AcidState (EventState event)
+            -> event
+            -> m (EventResult event)
+runQuery  = query'
+
+runUpdate ::   (UpdateEvent event, MonadIO m)
+             => AcidState (EventState event)
+             -> event
+             -> m (EventResult event)
+runUpdate = update'
 
 -- Helper function to add a list of new spans to a trace.
 updateTrace :: Trace -> [FreeSpan] -> HapperState -> HapperState
