@@ -22,4 +22,5 @@ Executable happer
                    , text
                    , xmlhtml
                    , transformers
+                   , bytestring
   hs-source-dirs:    app/src

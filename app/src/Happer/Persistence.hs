@@ -1,6 +1,14 @@
 {-# LANGUAGE TemplateHaskell, TypeFamilies, DeriveDataTypeable #-}
 
-module Happer.Persistence where
+module Happer.Persistence ( withDatastore
+                          , runQuery
+                          , runUpdate
+                          , Datastore
+                          , TraceCount(..)
+                          , AddTrace(..)
+                          , TraceById(..)
+                          , AddSpans(..)
+) where
 
 import Happer.Types
 import qualified Happer.Types as HT
@@ -13,7 +21,7 @@ import Control.Monad.State  ( get, put )
 import Data.Maybe         ( fromJust, isJust )
 import Data.List          ( nub )
 import Data.Map           ( Map, fromListWith, foldrWithKey, findWithDefault )
-import Data.Acid
+import Data.Acid          hiding ( runQuery )
 import Data.Acid.Advanced ( query', update' )
 import Data.Acid.Local    ( createCheckpointAndClose )
 import Data.IxSet         ( (@=), getOne )

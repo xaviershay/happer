@@ -64,6 +64,9 @@ instance Indexable Trace where
 data HapperState = HapperState { traces :: IxSet Trace }
     deriving (Data, Typeable)
 
+data RequestError = RequestError String
+data RequestSuccess = RequestSuccess
+
 initialState = HapperState { traces = empty }
 
 -- Automatically derive required SafeCopy instances.
