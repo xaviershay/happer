@@ -10,4 +10,9 @@ Executable happer
   Main-is:           Main.hs
   Build-Depends:     base
                    , happstack-server
+                   , ixset
+                   , safecopy
+                   , acid-state
+                   , containers
+                   , mtl
   hs-source-dirs:    app/src

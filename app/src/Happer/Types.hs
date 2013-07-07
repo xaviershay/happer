@@ -1,10 +1,17 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, TemplateHaskell, TypeSynonymInstances #-}
 
 module Happer.Types where
 
 -- Support for generic programming of data structures. Used by persistence and
 -- serialization libraries. This requires the two language options above.
 import Data.Data
+
+-- Used for indexing top level data structures for efficient retrieval.
+import Data.IxSet    ( IxSet(..)
+                     , Indexable(empty), ixFun, ixSet , (@=), getOne )
+
+-- Support nested version control when data is serialized.
+import Data.SafeCopy ( SafeCopy, base, deriveSafeCopy )
 
 -- A trace is a root level span. For all intents and purposes it can be treated
 -- as a regular span.
@@ -48,3 +55,19 @@ data FreeSpan = FreeSpan { traceId  :: SpanId
                          , span     :: Span
                          }
                          deriving (Ord, Eq, Data, Typeable, Show)
+
+-- A trace can be retrieved by ID.
+instance Indexable Trace where
+    empty = ixSet [ ixFun $ \bp -> [ spanId bp ] ]
+
+-- The entire state of the world.
+data HapperState = HapperState { traces :: IxSet Trace }
+    deriving (Data, Typeable)
+
+initialState = HapperState { traces = empty }
+
+-- Automatically derive required SafeCopy instances.
+$(deriveSafeCopy 0 'base ''SpanId)
+$(deriveSafeCopy 0 'base ''Span)
+$(deriveSafeCopy 0 'base ''FreeSpan)
+$(deriveSafeCopy 0 'base ''HapperState)
