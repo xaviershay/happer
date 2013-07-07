@@ -9,4 +9,8 @@ It's a learning experiment, don't use it.
     bin/setup-dev
     bin/run
 
-See `acceptance.rb` for examples.
+See `app/testsuite/acceptance.rb` for examples.
+
+## Development
+
+Start reading at `app/src/Main.hs`.
