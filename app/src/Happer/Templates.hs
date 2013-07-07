@@ -1,7 +1,12 @@
-module Happer.Splices where
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
+module Happer.Templates ( mkViewHandler, viewServe ) where
 
 import Happer.Types
 import Happer.Persistence
+
+import Happstack.Server.Heist (heistServe, initHeistCompiled)
+import Happstack.Server
 
 import Heist.Compiled         (Splice, yieldRuntimeText)
 import qualified Text.XmlHtml as X
@@ -15,3 +20,8 @@ traceCountSplice datastore = do
     return res
 
 happerSplices datastore = [(T.pack "trace-count", traceCountSplice datastore)]
+
+mkViewHandler datastore templateDir =
+  initHeistCompiled (happerSplices datastore) [] templateDir
+
+viewServe = heistServe

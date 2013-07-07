@@ -5,10 +5,9 @@ module Main where
 import Happer.Types
 import Happer.Persistence
 import Happer.Json
-import Happer.Splices
+import Happer.Templates
 
 import Happstack.Server
-import Happstack.Server.Heist (heistServe, initHeistCompiled)
 
 import Control.Monad          ( msum )
 import Control.Monad.IO.Class ( liftIO )
@@ -47,15 +46,15 @@ postSpans datastore =
                          ok $ toResponse $ toJson RequestSuccess
 
 handlers datastore = do
-  heistState <- do
-      r <- initHeistCompiled (happerSplices datastore) [] "app/views"
-      case r of
-        Left e      -> error $ unlines e
-        Right state -> return state
+  viewHandler <- do
+    r <- mkViewHandler datastore "app/views"
+    case r of
+      Left e      -> error $ unlines e
+      Right state -> return state
   msum [ dir "trace" $ method PUT >> path (putTrace datastore)
        , dir "trace" $ method GET >> path (getTrace datastore)
        , dir "spans" $ postSpans datastore
-       , heistServe heistState
+       , viewServe viewHandler -- TODO: Collapse these two functions into one.
        , nullDir >> seeOther ("/index" :: String) (toResponse ())
        ]
 
