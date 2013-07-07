@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell, TypeFamilies, DeriveDataTypeable #-}
+
 module Happer.Persistence where
 
 import Happer.Types
@@ -69,3 +71,5 @@ addSpans spans =
       let mk = getOne $ traces state @= traceId x
       guard  (isJust mk)
       return (fromJust mk, [x])
+
+$(makeAcidic ''HapperState ['addTrace, 'traceById, 'addSpans, 'traceCount])
