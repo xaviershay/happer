@@ -12,6 +12,23 @@ import Happstack.Helpers
 
 import Control.Monad ( msum )
 
+main :: IO ()
+main = do
+  withDatastore (simpleHTTP nullConf . handlers)
+
+handlers datastore = do
+  viewHandler <- do
+    r <- mkViewHandler datastore "app/views"
+    case r of
+      Left e      -> error $ unlines e
+      Right state -> return state
+  msum [ dir "trace" $ method PUT >> path (putTrace  datastore)
+       , dir "trace" $ method GET >> path (getTrace  datastore)
+       , dir "spans" $                     postSpans datastore
+       , viewServe viewHandler -- TODO: Collapse these two functions into one.
+       , nullDir >> seeOther ("/index" :: String) (toResponse ())
+       ]
+
 putTrace :: Datastore -> Integer -> ServerPart Response
 putTrace datastore id =
     do body <- getBody
@@ -36,20 +53,3 @@ postSpans datastore =
                       toJson (RequestError err)
        Right spans -> do _ <- runUpdate datastore (AddSpans spans)
                          ok $ toResponse $ toJson RequestSuccess
-
-handlers datastore = do
-  viewHandler <- do
-    r <- mkViewHandler datastore "app/views"
-    case r of
-      Left e      -> error $ unlines e
-      Right state -> return state
-  msum [ dir "trace" $ method PUT >> path (putTrace  datastore)
-       , dir "trace" $ method GET >> path (getTrace  datastore)
-       , dir "spans" $                     postSpans datastore
-       , viewServe viewHandler -- TODO: Collapse these two functions into one.
-       , nullDir >> seeOther ("/index" :: String) (toResponse ())
-       ]
-
-main :: IO ()
-main = do
-  withDatastore (simpleHTTP nullConf . handlers)

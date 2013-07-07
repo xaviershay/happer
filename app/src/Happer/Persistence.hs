@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell, TypeFamilies, DeriveDataTypeable #-}
+{-# LANGUAGE TemplateHaskell, TypeFamilies, DeriveDataTypeable,
+             NoMonomorphismRestriction #-}
 
 module Happer.Persistence ( withDatastore
                           , runQuery
@@ -41,43 +42,8 @@ withDatastore f = bracket (openLocalState initialState)
                           f
 
 -- Alias acid-state query methods so we don't leak them into other modules.
--- Type signatures are unfortunately required by the compiler.
-runQuery ::    (MonadIO m, QueryEvent event)
-            => AcidState (EventState event)
-            -> event
-            -> m (EventResult event)
 runQuery  = query'
-
-runUpdate ::   (UpdateEvent event, MonadIO m)
-             => AcidState (EventState event)
-             -> event
-             -> m (EventResult event)
 runUpdate = update'
-
--- Helper function to add a list of new spans to a trace.
-updateTrace :: Trace -> [FreeSpan] -> HapperState -> HapperState
-updateTrace trace freeSpans state =
-  state {
-    traces = IxSet.updateIx (spanId trace)
-                            (addSpansToTrace trace freeSpans)
-                            (traces state)
-  }
-
-addSpansToTrace :: Span -> [FreeSpan] -> Span
-addSpansToTrace trace freeSpans =
-  addChildSpans spanMap trace
-  where
-    spanMap :: Map SpanId [Span]
-    spanMap = fromListWith (++) [(parentId x, [HT.span x]) | x <- freeSpans]
-
-    -- Recursive rebuilds a span heirachy, adding new spans from the map.
-    addChildSpans :: Map SpanId [Span] -> Span -> Span
-    addChildSpans spanMap span =
-      span {
-        children = nub $ map (addChildSpans spanMap)
-                               (findWithDefault [] (spanId span) spanMap) ++
-                               (children span)
-      }
 
 traceById :: SpanId -> Query HapperState (Maybe Trace)
 traceById id =
@@ -110,4 +76,31 @@ addSpans spans =
       guard  (isJust mk)
       return (fromJust mk, [x])
 
+-- Helper function to add a list of new spans to a trace.
+updateTrace :: Trace -> [FreeSpan] -> HapperState -> HapperState
+updateTrace trace freeSpans state =
+  state {
+    traces = IxSet.updateIx (spanId trace)
+                            (addSpansToTrace trace freeSpans)
+                            (traces state)
+  }
+
+addSpansToTrace :: Span -> [FreeSpan] -> Span
+addSpansToTrace trace freeSpans =
+  addChildSpans spanMap trace
+  where
+    spanMap :: Map SpanId [Span]
+    spanMap = fromListWith (++) [(parentId x, [HT.span x]) | x <- freeSpans]
+
+    -- Recursive rebuilds a span heirachy, adding new spans from the map.
+    addChildSpans :: Map SpanId [Span] -> Span -> Span
+    addChildSpans spanMap span =
+      span {
+        children = nub $ map (addChildSpans spanMap)
+                               (findWithDefault [] (spanId span) spanMap) ++
+                               (children span)
+      }
+
+-- Make data types to abstractly represent the functions in a way that can be
+-- persisted.
 $(makeAcidic ''HapperState ['addTrace, 'traceById, 'addSpans, 'traceCount])
