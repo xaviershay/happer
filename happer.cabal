@@ -17,4 +17,9 @@ Executable happer
                    , mtl
                    , aeson
                    , attoparsec
+                   , heist
+                   , happstack-heist
+                   , text
+                   , xmlhtml
+                   , transformers
   hs-source-dirs:    app/src
