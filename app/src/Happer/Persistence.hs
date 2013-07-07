@@ -28,8 +28,6 @@ import Data.Acid.Local    ( createCheckpointAndClose )
 import Data.IxSet         ( (@=), getOne )
 import qualified Data.IxSet as IxSet
 
-import Control.Monad.IO.Class (MonadIO)
-
 -- AcidState persists regular haskell data structures to disk with ACID
 -- guarantees. It does have a remote server option which I need to investigate
 -- more.
@@ -41,7 +39,7 @@ withDatastore f = bracket (openLocalState initialState)
                           (createCheckpointAndClose)
                           f
 
--- Alias acid-state query methods so we don't leak them into other modules.
+-- Alias acid-state query methods so as not to leak them into other modules.
 runQuery  = query'
 runUpdate = update'
 

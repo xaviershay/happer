@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
 
 -- JSON converters for all basic Happer types.
 module Happer.Json ( fromJson, toJson ) where
@@ -9,14 +9,11 @@ import Control.Applicative ( (<$>), (<*>), pure )
 
  -- a JSON library
 import Data.Aeson
-import qualified Data.ByteString.Lazy as L
 import Data.Attoparsec.Number ( Number(I) )
 
-fromJson :: (FromJSON a) => L.ByteString -> Either String a
+-- Alias aeson methods so as not to leak them into other modules.
 fromJson = eitherDecode
-
-toJson :: (ToJSON a) => a -> L.ByteString
-toJson = encode
+toJson   = encode
 
 instance FromJSON FreeSpan where
   parseJSON (Object v) = FreeSpan                        <$>
@@ -49,7 +46,7 @@ instance ToJSON Span where
                     ]
 
 instance ToJSON RequestError where
-  toJSON (RequestError err) = object [ "err"    .= err ]
+  toJSON (RequestError err) = object [ "err" .= err ]
 
 instance ToJSON RequestSuccess where
   toJSON RequestSuccess = object [ ]
