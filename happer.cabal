@@ -1,0 +1,13 @@
+Name:                happer
+Version:             0.0
+Description:         Server implementation of Google Dapper
+Author:              Xavier Shay
+Maintainer:          contact@xaviershay.com
+Build-Type:          Simple
+Cabal-Version:       >=1.2
+
+Executable happer
+  Main-is:           Main.hs
+  Build-Depends:     base
+                   , happstack-server
+  hs-source-dirs:    app/src
