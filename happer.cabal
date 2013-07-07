@@ -15,4 +15,6 @@ Executable happer
                    , acid-state
                    , containers
                    , mtl
+                   , aeson
+                   , attoparsec
   hs-source-dirs:    app/src
